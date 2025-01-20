@@ -8,8 +8,8 @@ When you connect broadlink device then disable the lock info from the broadlink 
 otherwise auth issue occurs 
 '''
 
+
 def fetch_data_from_broadlink_devices():
-    
     devices = bl.discover(timeout=5)
 
     if not devices:
@@ -23,7 +23,7 @@ def fetch_data_from_broadlink_devices():
         print(f"  Host: {item.host[0]}")  # Correctly access the IP address from the tuple
         print(f"  MAC Address: {item.mac.hex()}")  # MAC address in hexadecimal
         print(f"  Device Type: {hex(item.devtype)}")  # This prints the device type as a hex string
-      
+
     for item in devices:
         host = item.host  # Device IP address (host already contains the tuple)
         mac = bytearray.fromhex(item.mac.hex())  # Device MAC address (hex)
@@ -45,7 +45,6 @@ def fetch_data_from_broadlink_devices():
             else:
                 print("Authentication failed. This may indicate an incorrect password or a setup issue.")
                 exit()
-          
 
             # Fetch temperature and humidity data (if supported)
             try:
@@ -66,10 +65,9 @@ def fetch_data_from_broadlink_devices():
 
 
 if __name__ == "__main__":
-    # Schedule the task to run every 60 minutes
-    schedule.every(60).minutes.do(fetch_data_from_broadlink_devices)
+    # Schedule the task to run every 5 minutes
+    schedule.every(5).minutes.do(fetch_data_from_broadlink_devices)
 
     while True:
         schedule.run_pending()
         time.sleep(1)
-
