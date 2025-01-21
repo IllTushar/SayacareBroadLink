@@ -1,7 +1,9 @@
 import broadlink as bl
-from datetime import datetime
+from datetime import datetime, timedelta
 import schedule
 import time
+import shelve
+from send_notification import Notification
 
 '''
 When you connect broadlink device then disable the lock info from the broadlink app
@@ -55,6 +57,7 @@ def fetch_data_from_broadlink_devices():
                 print(f"Temperature: {temperature}°C")
                 print(f"Humidity: {humidity}%")
                 print(f'current_date: {current_date}')
+                temperature_validation(30)
             except AttributeError:
                 print("This device does not support sensor data.")
             except Exception as e:
@@ -64,9 +67,60 @@ def fetch_data_from_broadlink_devices():
             print(f"Error initializing device: {e}")
 
 
+def temperature_validation(temperature):
+    with shelve.open("shared_prefs.db") as prefs:
+        timeStamp = prefs.get("timeStamp", None)
+        current_time = datetime.now()
+
+        # Parse timeStamp if it exists
+        if timeStamp:
+            timeStamp = datetime.strptime(timeStamp, "%Y-%m-%d %H:%M:%S")
+
+        # Check if temperature is within the normal range
+        if 15 <= temperature <= 25:
+            print("Temperature is within the normal range. No action required.")
+            return
+
+        # Check for user acknowledgment
+        apiStatus = getUserAcknowledgment()
+        if apiStatus:
+            print("User acknowledgment received. No further action needed.")
+            return
+
+        # Helper function to send notifications or emails
+
+        # Check if enough time has passed to send another notification
+        if not timeStamp or (current_time - timeStamp) >= timedelta(minutes=2):
+            if temperature < 40:
+                Notification.send_notification(temperature, "Notification sent to staff!")
+            else:  # temperature >= 40
+                Notification.send_notification(temperature, "Notification sent to staff!")
+                emailSendToAdmin(temperature)  # Send email to admin
+                print("Email sent to admin!")
+
+            # Store the current timestamp after sending the notification
+            prefs["timeStamp"] = current_time.strftime("%Y-%m-%d %H:%M:%S")
+            print("TimeStamp stored in shared preferences.")
+        else:
+            print("No need to send acknowledgment (within 2 minutes).")
+
+        # Reset timeStamp if not already reset and time has passed
+        if timeStamp and (current_time - timeStamp) > timedelta(minutes=2):
+            prefs["timeStamp"] = None
+            print("TimeStamp reset to None.")
+
+
+def emailSendToAdmin(temperature):
+    pass
+
+
+def getUserAcknowledgment():
+    pass
+
+
 if __name__ == "__main__":
     # Schedule the task to run every 5 minutes
-    schedule.every(5).minutes.do(fetch_data_from_broadlink_devices)
+    schedule.every(1).minutes.do(fetch_data_from_broadlink_devices)
 
     while True:
         schedule.run_pending()
