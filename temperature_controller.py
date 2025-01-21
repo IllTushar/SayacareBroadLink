@@ -92,9 +92,9 @@ def temperature_validation(temperature):
         # Check if enough time has passed to send another notification
         if not timeStamp or (current_time - timeStamp) >= timedelta(minutes=2):
             if temperature < 40:
-                Notification.send_notification(temperature, "Notification sent to staff!")
+                Notification.send_notification(temperature)
             else:  # temperature >= 40
-                Notification.send_notification(temperature, "Notification sent to staff!")
+                Notification.send_notification(temperature)
                 emailSendToAdmin(temperature)  # Send email to admin
                 print("Email sent to admin!")
 

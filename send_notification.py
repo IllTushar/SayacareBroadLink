@@ -6,7 +6,7 @@ class Notification:
         pass
 
     @staticmethod
-    def send_notification(temperature, message):
+    def send_notification(temperature):
         url = "https://samasya.tech/api/group_push/main"
         temp = ""
         if temperature < 15:
@@ -26,6 +26,6 @@ class Notification:
         response = rq.post(url, json=data)
 
         if response.status_code == 200:
-            print("Success: ", message)
+            print("Success: ", "Notification send to staff!!")
         else:
             print("Error: ", response.status_code)
