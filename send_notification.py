@@ -1,12 +1,12 @@
 import requests as rq
-from Staff_Info import Staff_Info
+
 import os
 
 
 class Notification:
 
     @staticmethod
-    def send_notification(temperature, humidity):
+    def send_notification(temperature, humidity, phone_numbers,file_path):
         url = "https://samasya.tech/api/group_push/main"
 
         # Ensure temperature is an integer or float
@@ -23,16 +23,10 @@ class Notification:
             print("Temperature is in the normal range. No notification sent.")
             return  # Exit if temperature is normal
 
-        # File path where staff numbers are stored
-        file_path = r'C:\Users\gtush\Desktop\split_files\operations.csv'
-
         # Check if file exists before accessing it
         if not os.path.exists(file_path):
             print(f"Error: File {file_path} not found.")
             return
-
-        # Fetch phone numbers
-        phone_numbers = Staff_Info.getStaff_Phone_Number(file_path)
 
         if not phone_numbers:
             print("Error: No phone numbers found.")

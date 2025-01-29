@@ -8,6 +8,9 @@ import atexit
 import signal
 import sys
 from store_temperature_humidity import StoreTemperature
+from acknowledge_by_staff import Acknowledgement
+from Staff_Info import Staff_Info
+from send_email import Email
 
 '''
 When you connect broadlink device then disable the lock info from the broadlink app
@@ -95,22 +98,28 @@ def temperature_validation(temperature, humidity):
 
         # Check if temperature is within the normal range
         if 15 <= temperature <= 25 and 30 <= humidity <= 57:
-            print("Temperature is within the normal range. No action required.")
+            print(f"Temperature = {temperature}°C and Humidity = {humidity}% is within the normal range. No action required.")
             return
 
         # Check for user acknowledgment
-        apiStatus = getUserAcknowledgment()
+        apiStatus = Acknowledgement.acknowledgement_api()
         if apiStatus:
             print("User acknowledgment received. No further action needed.")
             return
 
         # Check if enough time has passed to send another notification
         if not timeStamp or (current_time - timeStamp) >= timedelta(minutes=2):
+
+            # File path where staff numbers are stored
+            file_path = r'C:\Users\gtush\Desktop\split_files\operations.csv'
+            # Fetch phone numbers
+            phone_numbers = Staff_Info.getStaff_Phone_Number(file_path)
+
             if temperature < 40 or humidity < 70:
-                Notification.send_notification(temperature, humidity)
+                Notification.send_notification(temperature, humidity, phone_numbers, file_path)
             else:  # temperature >= 40
-                Notification.send_notification(temperature, humidity)
-                emailSendToAdmin(temperature)  # Send email to admin
+                Notification.send_notification(temperature, humidity, phone_numbers, file_path)
+                Email.emailSendToAdmin(temperature, humidity)  # Send email to admin
                 print("Email sent to admin!")
 
             # Store the current timestamp after sending the notification
@@ -127,12 +136,6 @@ def temperature_validation(temperature, humidity):
             print("TimeStamp reset to None.")
 
 
-def emailSendToAdmin(temperature):
-    pass
-
-
-def getUserAcknowledgment():
-    pass
 
 
 # Exit safely
