@@ -4,11 +4,22 @@ import schedule
 import time
 import shelve
 from send_notification import Notification
+import atexit
+import signal
+import sys
+from store_temperature_humidity import StoreTemperature
 
 '''
 When you connect broadlink device then disable the lock info from the broadlink app
 otherwise auth issue occurs 
 '''
+
+
+def clear_shelve():
+    """Clears the shared_prefs.db shelve database."""
+    with shelve.open("shared_prefs.db") as prefs:
+        prefs.clear()
+    print("Shared preferences cleared.")
 
 
 def fetch_data_from_broadlink_devices():
@@ -57,18 +68,24 @@ def fetch_data_from_broadlink_devices():
                 print(f"Temperature: {temperature}°C")
                 print(f"Humidity: {humidity}%")
                 print(f'current_date: {current_date}')
-                temperature_validation(30)
+                # Schedule the function to run every 1 hour
+                StoreTemperature.update_temperature_on_server(
+                    temperature=temperature, humidity=humidity,
+                    mac_address=mac,
+                    ware_house_name="Main Warehouse",
+                    current_date=current_date)
+                temperature_validation(temperature, humidity)
+
             except AttributeError:
                 print("This device does not support sensor data.")
             except Exception as e:
                 print(f"Error while fetching sensor data: {e}")
-
         except Exception as e:
             print(f"Error initializing device: {e}")
 
 
-def temperature_validation(temperature):
-    with shelve.open("shared_prefs.db") as prefs:
+def temperature_validation(temperature, humidity):
+    with shelve.open("shared_prefs.db", flag='c', writeback=True) as prefs:  # Use 'c' mode (create if needed)
         timeStamp = prefs.get("timeStamp", None)
         current_time = datetime.now()
 
@@ -77,7 +94,7 @@ def temperature_validation(temperature):
             timeStamp = datetime.strptime(timeStamp, "%Y-%m-%d %H:%M:%S")
 
         # Check if temperature is within the normal range
-        if 15 <= temperature <= 25:
+        if 15 <= temperature <= 25 and 30 <= humidity <= 57:
             print("Temperature is within the normal range. No action required.")
             return
 
@@ -87,26 +104,26 @@ def temperature_validation(temperature):
             print("User acknowledgment received. No further action needed.")
             return
 
-        # Helper function to send notifications or emails
-
         # Check if enough time has passed to send another notification
         if not timeStamp or (current_time - timeStamp) >= timedelta(minutes=2):
-            if temperature < 40:
-                Notification.send_notification(temperature)
+            if temperature < 40 or humidity < 70:
+                Notification.send_notification(temperature, humidity)
             else:  # temperature >= 40
-                Notification.send_notification(temperature)
+                Notification.send_notification(temperature, humidity)
                 emailSendToAdmin(temperature)  # Send email to admin
                 print("Email sent to admin!")
 
             # Store the current timestamp after sending the notification
             prefs["timeStamp"] = current_time.strftime("%Y-%m-%d %H:%M:%S")
+            prefs.sync()  # Ensure data is written to disk
             print("TimeStamp stored in shared preferences.")
         else:
             print("No need to send acknowledgment (within 2 minutes).")
 
-        # Reset timeStamp if not already reset and time has passed
+        # Reset timeStamp if more than 2 minutes have passed
         if timeStamp and (current_time - timeStamp) > timedelta(minutes=2):
             prefs["timeStamp"] = None
+            prefs.sync()  # Ensure data is written to disk
             print("TimeStamp reset to None.")
 
 
@@ -118,10 +135,26 @@ def getUserAcknowledgment():
     pass
 
 
+# Exit safely
+def handle_exit(signum=None, frame=None):
+    """Handles forced termination signals and clears shelve."""
+    print("Program is stopping. Cleaning up shared preferences...")
+    clear_shelve()
+    sys.exit(0)
+
+
+# Register cleanup functions
+atexit.register(clear_shelve)  # Runs on normal exit
+signal.signal(signal.SIGINT, handle_exit)  # Handle Ctrl+C
+signal.signal(signal.SIGTERM, handle_exit)
+
 if __name__ == "__main__":
     # Schedule the task to run every 5 minutes
     schedule.every(1).minutes.do(fetch_data_from_broadlink_devices)
 
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    try:
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+    except (KeyboardInterrupt, SystemExit):
+        handle_exit()
