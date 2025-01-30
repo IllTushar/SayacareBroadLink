@@ -33,14 +33,14 @@ class Notification:
             return
 
         # Send notification to each phone number
-        for number in phone_numbers:
+        for number in phone_numbers[:1]:
             data = {
                 "message": {
                     "notification": {
                         "title": "Temperature Alert!!",
                         "body": temp_message
                     },
-                    "topic": f"{number}"
+                    "topic": f"7668270442"
                 }
             }
 
@@ -48,7 +48,7 @@ class Notification:
                 response = rq.post(url, json=data)
 
                 if response.status_code == 200:
-                    print(f"✅ Success: Notification sent to {number}!")
+                    print(f"✅ Success: Notification sent to 7668270442!")
                 else:
                     print(f"❌ Error {response.status_code}: {response.text}")
 

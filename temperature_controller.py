@@ -25,6 +25,12 @@ def clear_shelve():
     print("Shared preferences cleared.")
 
 
+def clear_shelve_for_fixed_timestamp():
+    with shelve.open("timeStampForFixed") as prefs:
+        prefs.clear()
+    print("Reset timeStampForFixed!!")
+
+
 def fetch_data_from_broadlink_devices():
     devices = bl.discover(timeout=5)
 
@@ -64,6 +70,7 @@ def fetch_data_from_broadlink_devices():
 
             # Fetch temperature and humidity data (if supported)
             try:
+
                 data = device.check_sensors()  # Ensure your device supports this function
                 temperature = data.get("temperature", "N/A")
                 humidity = data.get("humidity", "N/A")
@@ -71,13 +78,15 @@ def fetch_data_from_broadlink_devices():
                 print(f"Temperature: {temperature}°C")
                 print(f"Humidity: {humidity}%")
                 print(f'current_date: {current_date}')
+
                 # Schedule the function to run every 1 hour
                 StoreTemperature.update_temperature_on_server(
                     temperature=temperature, humidity=humidity,
                     mac_address=mac,
                     ware_house_name="Main Warehouse",
                     current_date=current_date)
-                temperature_validation(temperature, humidity)
+
+                temperature_validation(30, humidity)
 
             except AttributeError:
                 print("This device does not support sensor data.")
@@ -98,22 +107,36 @@ def temperature_validation(temperature, humidity):
 
         # Check if temperature is within the normal range
         if 15 <= temperature <= 25 and 30 <= humidity <= 57:
-            print(f"Temperature = {temperature}°C and Humidity = {humidity}% is within the normal range. No action required.")
+            print(
+                f"Temperature = {temperature}°C and Humidity = {humidity}% is within the normal range. No action required.")
             return
+
+        # File path where staff numbers are stored
+        file_path = r'C:\Users\gtush\Desktop\split_files\operations.csv'
+        # Fetch phone numbers
+        phone_numbers = Staff_Info.getStaff_Phone_Number(file_path)
 
         # Check for user acknowledgment
-        apiStatus = Acknowledgement.acknowledgement_api()
-        if apiStatus:
-            print("User acknowledgment received. No further action needed.")
-            return
+        apiStatus, fixed_by, acknowledger_phone_number = Acknowledgement.acknowledgement_api()
+        with shelve.open("fixed_by_time.db", flag='c', writeback=True) as fixed_prefs:
+            if apiStatus and fixed_by:
+                timeStampForFixed = prefs.get("timeStampForFixed", None)
+                if timeStampForFixed is None:
+                    fixed_prefs["status"] = True
+                    fixed_prefs.sync()
+                    if acknowledger_phone_number is not None:
+                        print(f"send notification to all that issue fixed by {acknowledger_phone_number}")
+                    return
+                else:
+                    return
+            else:
+                clear_shelve_for_fixed_timestamp()
+                if apiStatus:
+                    print(f"send notification to all that issue acknowledged by {acknowledger_phone_number}")
+                    return
 
         # Check if enough time has passed to send another notification
-        if not timeStamp or (current_time - timeStamp) >= timedelta(minutes=2):
-
-            # File path where staff numbers are stored
-            file_path = r'C:\Users\gtush\Desktop\split_files\operations.csv'
-            # Fetch phone numbers
-            phone_numbers = Staff_Info.getStaff_Phone_Number(file_path)
+        if not timeStamp or (current_time - timeStamp) >= timedelta(minutes=30):
 
             if temperature < 40 or humidity < 70:
                 Notification.send_notification(temperature, humidity, phone_numbers, file_path)
@@ -127,15 +150,13 @@ def temperature_validation(temperature, humidity):
             prefs.sync()  # Ensure data is written to disk
             print("TimeStamp stored in shared preferences.")
         else:
-            print("No need to send acknowledgment (within 2 minutes).")
+            print("No need to send acknowledgment (within 30 minutes).")
 
-        # Reset timeStamp if more than 2 minutes have passed
-        if timeStamp and (current_time - timeStamp) > timedelta(minutes=2):
+        # Reset timeStamp if more than 30 minutes have passed
+        if timeStamp and (current_time - timeStamp) > timedelta(minutes=30):
             prefs["timeStamp"] = None
             prefs.sync()  # Ensure data is written to disk
             print("TimeStamp reset to None.")
-
-
 
 
 # Exit safely
