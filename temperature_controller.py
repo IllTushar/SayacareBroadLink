@@ -86,7 +86,7 @@ def fetch_data_from_broadlink_devices():
                     ware_house_name="Main Warehouse",
                     current_date=current_date)
 
-                temperature_validation(30, humidity)
+                temperature_validation(temperature, humidity)
 
             except AttributeError:
                 print("This device does not support sensor data.")
