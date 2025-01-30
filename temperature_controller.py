@@ -86,7 +86,7 @@ def fetch_data_from_broadlink_devices():
                     ware_house_name="Main Warehouse",
                     current_date=current_date)
 
-                temperature_validation(30, humidity)
+                temperature_validation(temperature, humidity)
 
             except AttributeError:
                 print("This device does not support sensor data.")
@@ -106,7 +106,7 @@ def temperature_validation(temperature, humidity):
             timeStamp = datetime.strptime(timeStamp, "%Y-%m-%d %H:%M:%S")
 
         # Check if temperature is within the normal range
-        if 15 <= temperature <= 25 and 30 <= humidity <= 57:
+        if 15 <= temperature <= 25 and 30 <= humidity <= 60:
             print(
                 f"Temperature = {temperature}°C and Humidity = {humidity}% is within the normal range. No action required.")
             return
@@ -138,7 +138,7 @@ def temperature_validation(temperature, humidity):
         # Check if enough time has passed to send another notification
         if not timeStamp or (current_time - timeStamp) >= timedelta(minutes=30):
 
-            if temperature < 40 or humidity < 70:
+            if temperature < 40 or humidity < 65:
                 Notification.send_notification(temperature, humidity, phone_numbers, file_path)
             else:  # temperature >= 40
                 Notification.send_notification(temperature, humidity, phone_numbers, file_path)
