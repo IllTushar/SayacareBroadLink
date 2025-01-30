@@ -13,7 +13,7 @@ class Acknowledgement:
 
                 if "status" in data:  # Check if 'status' key exists
                     print(f'{data['status']}')
-                    return data['status'], data['fixed_by_status']
+                    return data['status'], data['status'], data['status']
                 else:
                     print("Status key not found in response.")
         except rq.exceptions.RequestException as e:

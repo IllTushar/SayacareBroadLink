@@ -6,7 +6,7 @@ import os
 class Notification:
 
     @staticmethod
-    def send_notification(temperature, humidity, phone_numbers,file_path):
+    def send_notification(temperature, humidity, phone_numbers, file_path):
         url = "https://samasya.tech/api/group_push/main"
 
         # Ensure temperature is an integer or float
@@ -36,9 +36,10 @@ class Notification:
         for number in phone_numbers[:1]:
             data = {
                 "message": {
-                    "notification": {
+                    "data": {
                         "title": "Temperature Alert!!",
-                        "body": temp_message
+                        "body": temp_message,
+                        "redirectParams": "https://samasya.net.in/#/Login_Page"
                     },
                     "topic": f"7668270442"
                 }
