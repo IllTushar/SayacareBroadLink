@@ -33,7 +33,7 @@ class Notification:
             return
 
         # Send notification to each phone number
-        for number in phone_numbers[:1]:
+        for number in phone_numbers:
             data = {
                 "message": {
                     "data": {
@@ -41,9 +41,46 @@ class Notification:
                         "body": temp_message,
                         "redirectParams": "https://samasya.net.in/#/Login_Page"
                     },
-                    "topic": f"7668270442"
+                    "topic": f"{number}"
                 }
             }
+
+            try:
+                response = rq.post(url, json=data)
+
+                if response.status_code == 200:
+                    print(f"✅ Success: Notification sent to 7668270442!")
+                else:
+                    print(f"❌ Error {response.status_code}: {response.text}")
+
+            except rq.RequestException as e:
+                print(f"❌ Exception while sending request: {e}")
+
+    @staticmethod
+    def send_notification_to_acknowledge(phone_numbers, acknowledger_phone_number, fixed_by):
+        url = "https://samasya.tech/api/group_push/main"
+        # Send notification to each phone number
+        for number in phone_numbers:
+            if fixed_by:
+                data = {
+                    "message": {
+                        "data": {
+                            "title": "Temperature Alert!!",
+                            "body": f"Fixed by {acknowledger_phone_number}",
+                        },
+                        "topic": f"{number}"
+                    }
+                }
+            else:
+                data = {
+                    "message": {
+                        "data": {
+                            "title": "Temperature Alert!!",
+                            "body": f"Issues is acknowledge by {acknowledger_phone_number}",
+                        },
+                        "topic": f"{number}"
+                    }
+                }
 
             try:
                 response = rq.post(url, json=data)

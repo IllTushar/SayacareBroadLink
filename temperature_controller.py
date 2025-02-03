@@ -117,21 +117,25 @@ def temperature_validation(temperature, humidity):
         phone_numbers = Staff_Info.getStaff_Phone_Number(file_path)
 
         # Check for user acknowledgment
-        apiStatus, fixed_by, acknowledger_phone_number = Acknowledgement.acknowledgement_api()
+        status, acknowledger_phone_number, acknowledger_status, fixed_by, = Acknowledgement.acknowledgement_api()
         with shelve.open("fixed_by_time.db", flag='c', writeback=True) as fixed_prefs:
-            if apiStatus and fixed_by:
+            if status and fixed_by:
                 timeStampForFixed = prefs.get("timeStampForFixed", None)
                 if timeStampForFixed is None:
                     fixed_prefs["status"] = True
                     fixed_prefs.sync()
                     if acknowledger_phone_number is not None:
+                        Notification.send_notification_to_acknowledge(phone_numbers,
+                                                                      acknowledger_phone_number, fixed_by)
                         print(f"send notification to all that issue fixed by {acknowledger_phone_number}")
                     return
                 else:
                     return
             else:
                 clear_shelve_for_fixed_timestamp()
-                if apiStatus:
+                if status:
+                    Notification.send_notification_to_acknowledge(phone_numbers,
+                                                                  acknowledger_phone_number, fixed_by)
                     print(f"send notification to all that issue acknowledged by {acknowledger_phone_number}")
                     return
 
