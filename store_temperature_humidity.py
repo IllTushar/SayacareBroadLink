@@ -6,7 +6,7 @@ from datetime import datetime
 class StoreTemperature:
     @staticmethod
     def update_temperature_on_server(temperature, humidity, mac_address, ware_house_name, current_date):
-        url = "https://saya.net.in/api/warehouse-temperature"
+        url = "https://samasaya.tech/api/warehouse-temperature"
 
         # Ensure mac_address is a string (convert bytearray to hex string if necessary)
         if isinstance(mac_address, bytearray):

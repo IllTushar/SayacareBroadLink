@@ -14,7 +14,7 @@ class Acknowledgement:
                 if "status" in data:  # Check if 'status' key exists
                     if data['status'] is True:
                         print(f'{data['status']}')
-                        return data['status'], data['phone_number'], data['acknowledge_status'], data['fixed_by_status']
+                        return data['acknowledge_status'], data['fixed_by_status'], data['phone_number']
                     else:
                         return data['status']
                 else:
