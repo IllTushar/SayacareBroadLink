@@ -36,6 +36,7 @@ def fetch_data_from_broadlink_devices():
 
     if not devices:
         print("No Broadlink devices found.")
+        Notification.send_notification_to_dev()
         exit()
 
     # Print discovered devices and store their information
@@ -117,7 +118,7 @@ def temperature_validation(temperature, humidity):
         phone_numbers = Staff_Info.getStaff_Phone_Number(file_path)
 
         # Check for user acknowledgment
-        acknowledger_status, fixed_by,  acknowledger_phone_number= Acknowledgement.acknowledgement_api()
+        acknowledger_status, fixed_by, acknowledger_phone_number = Acknowledgement.acknowledgement_api()
         with shelve.open("fixed_by_time.db", flag='c', writeback=True) as fixed_prefs:
             if acknowledger_status and fixed_by:
                 timeStampForFixed = prefs.get("timeStampForFixed", None)
