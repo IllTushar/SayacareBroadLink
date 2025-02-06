@@ -5,8 +5,8 @@ class Email:
     @staticmethod
     def emailSendToAdmin(temperature, humidity):
         url = "https://samasya.tech/api/email-send"
-        # emails = ['shivangi@sayacare.in', 'dmg@sayacare.in']
-        emails = ['tushar@sayacare.in']
+        emails = ['shivangi@sayacare.in', 'dmg@sayacare.in']
+        # emails = ['tushar@sayacare.in']
         for email in emails:
             data = {
                 "to": f"{email}",
