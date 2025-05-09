@@ -31,61 +31,50 @@ def clear_shelve_for_fixed_timestamp():
     print("Reset timeStampForFixed!!")
 
 
-def fetch_data_from_broadlink_devices():
-    devices = bl.discover(timeout=5)
-
+def fetch_data_from_broadlink_devices(devices):
     if not devices:
         print("No Broadlink devices found.")
         Notification.send_notification_to_dev()
-        exit()
+        return
 
-    # Print discovered devices and store their information
-    for item in devices:
-        print(f"Discovered device: {item}")
-        print("Device Details:")
-        print(f"  Host: {item.host[0]}")  # Correctly access the IP address from the tuple
-        print(f"  MAC Address: {item.mac.hex()}")  # MAC address in hexadecimal
-        print(f"  Device Type: {hex(item.devtype)}")  # This prints the device type as a hex string
+    device = devices[0]  # Get the first discovered device
+    print(f"Discovered device: {device}")
+    print("Device Details:")
+    print(f"  Host: {device.host[0]}")  # IP address
+    print(f"  MAC Address: {device.mac.hex()}")  # MAC in hexadecimal
+    print(f"  Device Type: {hex(device.devtype)}")
 
-    for item in devices:
-        host = item.host  # Device IP address (host already contains the tuple)
-        mac = bytearray.fromhex(item.mac.hex())  # Device MAC address (hex)
-        device_type = item.devtype  # Device type should be an integer (no need to convert to hex)
+    host = device.host  # (IP, port) tuple
+    mac = bytearray.fromhex(device.mac.hex())
+    device_type = device.devtype
 
-        # Ensure host is passed as a tuple (IP address, port)
-        if isinstance(host, tuple):
-            host = host[0], host[1]  # Extract tuple elements if needed (IP address and port)
-        else:
-            host = (host, 80)  # Default port 80 if host is not a tuple
+    if isinstance(host, tuple):
+        host = (host[0], host[1])  # Extract IP and port
+    else:
+        host = (host, 80)  # Default port
 
-        try:
-            # Initialize the device using the device's type, host, and MAC address
-            device = bl.gendevice(device_type, host, mac)
+    try:
+        broadlink_device = bl.gendevice(device_type, host, mac)
+        if broadlink_device.auth():
+            print("Authentication successful.")
 
-            # Authenticate with the device (without passing a password)
-            if device.auth():  # No argument needed
-                print("Authentication successful.")
-            else:
-                print("Authentication failed. This may indicate an incorrect password or a setup issue.")
-                exit()
-
-            # Fetch temperature and humidity data (if supported)
             try:
-
-                data = device.check_sensors()  # Ensure your device supports this function
+                data = broadlink_device.check_sensors()
                 temperature = data.get("temperature", "N/A")
                 humidity = data.get("humidity", "N/A")
                 current_date = datetime.now().strftime("%d-%b-%Y %I:%M:%S %p")
+
                 print(f"Temperature: {temperature}°C")
                 print(f"Humidity: {humidity}%")
-                print(f'current_date: {current_date}')
+                print(f"Current Date: {current_date}")
 
-                # Schedule the function to run every 1 hour
                 StoreTemperature.update_temperature_on_server(
-                    temperature=temperature, humidity=humidity,
-                    mac_address=mac,
+                    temperature=temperature,
+                    humidity=humidity,
+                    mac_address=device.mac.hex(),
                     ware_house_name="Main Warehouse",
-                    current_date=current_date)
+                    current_date=current_date
+                )
 
                 temperature_validation(temperature, humidity)
 
@@ -93,8 +82,10 @@ def fetch_data_from_broadlink_devices():
                 print("This device does not support sensor data.")
             except Exception as e:
                 print(f"Error while fetching sensor data: {e}")
-        except Exception as e:
-            print(f"Error initializing device: {e}")
+        else:
+            print("Authentication failed. Incorrect password or setup issue.")
+    except Exception as e:
+        print(f"Error initializing device: {e}")
 
 
 def temperature_validation(temperature, humidity):
@@ -178,8 +169,9 @@ signal.signal(signal.SIGINT, handle_exit)  # Handle Ctrl+C
 signal.signal(signal.SIGTERM, handle_exit)
 
 if __name__ == "__main__":
+    devices = bl.discover(timeout=5)
     # Schedule the task to run every 5 minutes
-    schedule.every(1).minutes.do(fetch_data_from_broadlink_devices)
+    schedule.every(1).minutes.do(fetch_data_from_broadlink_devices, devices)
 
     try:
         while True:
