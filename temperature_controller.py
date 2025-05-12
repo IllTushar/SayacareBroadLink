@@ -11,6 +11,7 @@ from store_temperature_humidity import StoreTemperature
 from acknowledge_by_staff import Acknowledgement
 from Staff_Info import Staff_Info
 from send_email import Email
+import pytz
 
 '''
 When you connect broadlink device then disable the lock info from the broadlink app
@@ -91,11 +92,24 @@ def fetch_data_from_broadlink_devices(devices):
 def temperature_validation(temperature, humidity):
     with shelve.open("shared_prefs.db", flag='c', writeback=True) as prefs:  # Use 'c' mode (create if needed)
         timeStamp = prefs.get("timeStamp", None)
-        current_time = datetime.now()
+        # Get current UTC time
+        utc = pytz.timezone('UTC')
+        current_time_utc = datetime.now(utc)
+
+        # Convert to IST
+        ist = pytz.timezone('Asia/Kolkata')
+        current_time = current_time_utc.astimezone(ist)
 
         # Parse timeStamp if it exists
         if timeStamp:
             timeStamp = datetime.strptime(timeStamp, "%Y-%m-%d %H:%M:%S")
+            # Step 2: Assume the original timezone is UTC (you can change this if needed)
+            utc = pytz.timezone('UTC')
+            timeStamp = utc.localize(timeStamp)
+
+            # Step 3: Convert to IST
+            ist = pytz.timezone('Asia/Kolkata')
+            timeStamp = timeStamp.astimezone(ist)
 
         # Check if temperature is within the normal range
         if 15 <= temperature <= 25 and 30 <= humidity <= 60:
