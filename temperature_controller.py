@@ -132,7 +132,6 @@ def temperature_validation(temperature, humidity):
                     fixed_prefs["status"] = True
                     fixed_prefs.sync()
                     if acknowledger_phone_number is not None:
-                        Notification.send_notification_to_humidity(temp=temperature, humidity=humidity)
                         Notification.send_notification_to_acknowledge(phone_numbers,
                                                                       acknowledger_phone_number, fixed_by)
                         print(f"send notification to all that issue fixed by {acknowledger_phone_number}")
@@ -149,8 +148,8 @@ def temperature_validation(temperature, humidity):
 
         # Check if enough time has passed to send another notification
         if not timeStamp or (current_time - timeStamp) >= timedelta(minutes=30):
-
             if temperature < 40 or humidity < 65:
+                Notification.send_notification_to_humidity(temp=temperature, humidity=humidity)
                 Notification.send_notification(temperature, humidity, phone_numbers, file_path)
             else:  # temperature >= 40
                 Notification.send_notification(temperature, humidity, phone_numbers, file_path)
