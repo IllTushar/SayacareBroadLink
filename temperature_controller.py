@@ -117,7 +117,7 @@ def temperature_validation(temperature, humidity):
                 f"Temperature = {temperature}°C and Humidity = {humidity}% is within the normal range. No action required.")
             return
 
-        Notification.send_notification_to_dev()
+        Notification.send_notification_to_humidity(temp=temperature, humidity=humidity)
         # File path where staff numbers are stored
         file_path = r'operations.csv'
         # Fetch phone numbers
