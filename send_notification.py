@@ -120,3 +120,30 @@ class Notification:
 
             except rq.RequestException as e:
                 print(f"❌ Exception while sending request: {e}")
+
+    def send_notification_to_humidity(temp, humidity):
+        url = "https://samasya.tech/api/group_push/main"
+
+        phone_numbers = ["7668270442", "9773901831"]
+        # Send notification to each phone number
+        for number in phone_numbers:
+            data = {
+                "message": {
+                    "data": {
+                        "title": f"Temperature {temp}°C and Humidity {humidity}%",
+                        "body": "Alert Maintain Warehouse temperature and humidity"
+                    },
+                    "topic": f"{number}"
+                }
+            }
+
+            try:
+                response = rq.post(url, json=data)
+
+                if response.status_code == 200:
+                    print(f"✅ Success: Notification sent to {number}!")
+                else:
+                    print(f"❌ Error {response.status_code}: {response.text}")
+
+            except rq.RequestException as e:
+                print(f"❌ Exception while sending request: {e}")
